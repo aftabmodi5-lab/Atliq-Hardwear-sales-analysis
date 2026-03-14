@@ -123,20 +123,19 @@ limit 5;
 				Gross sales Amount */
 
 SELECT 
-    s.date,
-    s.fiscal_year,
+    monathname(s.date) as Month,
+    year(s.date) as year,
     ROUND(SUM(s.sold_quantity * g.gross_price), 2) AS Gross_sales_amount
 FROM
     fact_sales_monthly s
         JOIN
     fact_gross_price g ON s.product_code = g.product_code
-        AND s.fiscal_year = g.fiscal_year
         JOIN
     dim_customer c ON s.customer_code = c.customer_code
 WHERE
     customer = 'Atliq Exclusive'
-GROUP BY s.date , s.fiscal_year
-ORDER BY Gross_sales_amount DESC;
+GROUP BY s.date ,
+ORDER BY year ASC;
 
 /* Task 8 : In which quarter of 2020, got the maximum total_sold_quantity? The final 
 			output contains these fields sorted by the total_sold_quantity, 
@@ -158,8 +157,7 @@ with CTE1 AS
 SELECT quarter, sum(sold_quantity) as total_sold_quantity from CTE1
 		WHERE fiscal_year=2020
 		GROUP BY quarter
-		ORDER BY total_sold_quantity desc
-limit 1;
+		ORDER BY total_sold_quantity desc;
 
 /* Task 9 : Which channel helped to bring more gross sales in the fiscal year 2021 and the percentage of contribution? 
 			The final output  contains these fields, 
@@ -171,19 +169,17 @@ SELECT *,
 		Round(gross_sales_mln*100/sum(gross_sales_mln)over(),2) as pct from
 (SELECT 
     c.channel,
-    Round(SUM(s.sold_quantity * g.gross_price) / 1000000,2) AS Gross_sales_mln
+    concat(Round(SUM(s.sold_quantity * g.gross_price) / 1000000,2), "M") AS Gross_sales_mln
 FROM
     fact_sales_monthly s
         JOIN
     fact_gross_price g ON s.product_code = g.product_code
-        AND s.fiscal_year = g.fiscal_year
         JOIN
     dim_customer c ON s.customer_code = c.customer_code
 WHERE
     s.fiscal_year = 2021
 GROUP BY c.channel) as Total_Gross_sales
-ORDER BY pct DESC
-limit 1;
+ORDER BY pct DESC;
 
 /* Task 10 : Get the Top 3 products in each division that have a high 
 			total_sold_quantity in the fiscal_year 2021? The final output contains these fields, 
@@ -196,7 +192,7 @@ limit 1;
 WITH CTE2 AS 
 (select *,
 	dense_rank() 
-	OVER(partition by division order by total_sold_qty DESC) as rnk
+	OVER(partition by division order by Total_sold_qty DESC) as rnk
 FROM
 (SELECT 
     p.division,
